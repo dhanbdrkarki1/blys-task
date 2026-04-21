@@ -1,13 +1,12 @@
 name: infra-ci
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - "terraform/**"
-      - ".github/workflows/infra.yaml"
   pull_request:
     paths:
-      - "terraform/**"
+      - "terraform/**/*.tf"
+      - "terraform/**/*.tfvars"
+      - "terraform/**/*.tfvars.json"
+      - "terraform/.tflint.hcl"
+      - "terraform/.terraform-docs.yml"
       - ".github/workflows/infra.yaml"
 
 jobs:
