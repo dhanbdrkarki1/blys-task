@@ -1,0 +1,49 @@
+name: Verify Pull Request
+
+on:
+  pull_request:
+    paths:
+      - 'blyss-app/**'
+      - '.github/workflows/ci-pr.yml'
+
+concurrency:
+  group: verify-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pre-commit
+        run: pip install --no-cache-dir pre-commit
+
+      - name: Run lint and formatting checks
+        run: pre-commit run --all-files --config blyss-app/.pre-commit-config.yaml
+
+      - name: Placeholder - security scanning
+        run: 'echo "TODO: add security scanner step (e.g., bandit or semgrep)."'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./blyss-app
+          file: ./blyss-app/docker/Dockerfile.prod
+          target: runtime
+          push: false
+          tags: local/blyss-app:pr-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
