@@ -3,7 +3,9 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: ^blyss-app/uv\.lock$
       - id: end-of-file-fixer
+        exclude: ^blyss-app/uv\.lock$
       - id: check-yaml
       - id: check-added-large-files
         args: [ '--maxkb=8000']
