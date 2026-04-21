@@ -41,10 +41,10 @@ locals {
     # blyss BE
     blyss-be = {
       name                 = "blyss-be-tg" # Name of the target group
-      protocol             = "HTTP"            # Protocol for the target group
-      port                 = 8000              # Port for the target group
-      target_type          = "ip"              # Target type (instance or IP)
-      deregistration_delay = 10                # Time to wait before deregistering targets
+      protocol             = "HTTP"        # Protocol for the target group
+      port                 = 8000          # Port for the target group
+      target_type          = "ip"          # Target type (instance or IP)
+      deregistration_delay = 10            # Time to wait before deregistering targets
 
       # Health Check Configuration
       health_check = {
@@ -115,7 +115,7 @@ locals {
     # Log group for ECS API service
     blyss-be-api = {
       name              = "/ecs/service/blyss-be" # Log group name
-      retention_in_days = 30                          # Log retention period in days
+      retention_in_days = 30                      # Log retention period in days
     }
   }
 
@@ -145,10 +145,10 @@ locals {
       container_definitions = [
         {
           name              = "blyss-be"                                        # Container name
-          cpu               = 512                                                   # CPU units for the container (Fargate)
-          memory            = 1024                                                  # Memory in MB for the container (Fargate)
-          memoryReservation = 768                                                   # Memory reservation to prevent OOM kills
-          essential         = true                                                  # Mark container as essential
+          cpu               = 512                                               # CPU units for the container (Fargate)
+          memory            = 1024                                              # Memory in MB for the container (Fargate)
+          memoryReservation = 768                                               # Memory reservation to prevent OOM kills
+          essential         = true                                              # Mark container as essential
           image             = "${module.ecr["blyss-be"].repository_url}:latest" # Container image from ECR
           # enables the init process inside the container
           linuxParameters = {
@@ -157,9 +157,9 @@ locals {
           portMappings = [
             {
               name          = "blyss-be" # Port name
-              containerPort = 8000           # Container port
-              protocol      = "tcp"          # Protocol (TCP)
-              appProtocol   = "http"         # Application protocol (HTTP)
+              containerPort = 8000       # Container port
+              protocol      = "tcp"      # Protocol (TCP)
+              appProtocol   = "http"     # Application protocol (HTTP)
             }
           ]
           readonlyRootFilesystem = false # Allow writing to the root filesystem
@@ -188,14 +188,14 @@ locals {
             logDriver = "awslogs" # Log driver (CloudWatch Logs)
             options = {
               "awslogs-group"         = module.cloudwatch_log_groups["blyss-be-api"].log_group_name # Log group name
-              "awslogs-region"        = data.aws_region.current.id                                      # AWS region
+              "awslogs-region"        = data.aws_region.current.id                                  # AWS region
               "awslogs-stream-prefix" = "blyss-be"                                                  # Log stream prefix
             }
           }
         }
       ]
       container_name            = "blyss-be" # Name of the container
-      container_port            = 8000           # Port exposed by the container
+      container_port            = 8000       # Port exposed by the container
       target_group              = "blyss-be" # Target group for the service
       attach_to_alb             = true
       health_check_grace_period = 60
