@@ -24,7 +24,7 @@ jobs:
         if: ${{ !github.event.pull_request.head.repo.fork }}
         uses: terraform-docs/gh-actions@main
         with:
-          working-dir: terraform
+          working-dir: terraform/live/prod
           output-file: README.md
           output-method: inject
           git-push: "true"
@@ -33,7 +33,7 @@ jobs:
         if: ${{ github.event.pull_request.head.repo.fork }}
         uses: terraform-docs/gh-actions@main
         with:
-          working-dir: terraform
+          working-dir: terraform/live/prod
           output-file: README.md
           output-method: inject
           git-push: "false"
