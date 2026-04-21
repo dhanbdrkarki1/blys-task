@@ -1,0 +1,39 @@
+name: Generate terraform docs
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**/*.tf"
+      - "terraform/.terraform-docs.yml"
+      - ".github/workflows/infra-docs.yml"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ github.token }}
+
+      - name: Render terraform docs and push changes back to PR
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: terraform-docs/gh-actions@main
+        with:
+          working-dir: terraform
+          output-file: README.md
+          output-method: inject
+          git-push: "true"
+
+      - name: Render terraform docs (fork PR, no push)
+        if: ${{ github.event.pull_request.head.repo.fork }}
+        uses: terraform-docs/gh-actions@main
+        with:
+          working-dir: terraform
+          output-file: README.md
+          output-method: inject
+          git-push: "false"

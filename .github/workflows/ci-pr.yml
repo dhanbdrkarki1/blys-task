@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'blyss-app/**'
+      - '.github/workflows/ci-pr.yml'
 
 concurrency:
   group: verify-pr-${{ github.event.pull_request.number || github.ref }}
@@ -28,7 +29,7 @@ jobs:
         run: pip install --no-cache-dir pre-commit
 
       - name: Run lint and formatting checks
-        run: pre-commit run --all-files
+        run: pre-commit run --all-files --config blyss-app/.pre-commit-config.yaml
 
       - name: Placeholder - security scanning
         run: 'echo "TODO: add security scanner step (e.g., bandit or semgrep)."'
@@ -39,8 +40,8 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: blyss-app/docker/Dockerfile.prod
+          context: ./blyss-app
+          file: ./blyss-app/docker/Dockerfile.prod
           target: runtime
           push: false
           tags: local/blyss-app:pr-${{ github.sha }}

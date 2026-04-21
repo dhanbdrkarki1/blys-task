@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'blyss-app/**'
-      - 'blyss-app/.github/workflows/github-actions.yml'
+      - '.github/workflows/github-actions.yml'
   workflow_dispatch:
 
 concurrency:
@@ -19,7 +19,6 @@ permissions:
 
 env:
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
-  IMAGE_TAG: ${{ github.sha }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
   ECS_SERVICE: ${{ vars.ECS_SERVICE }}
   ECS_TASK_DEFINITION: ${{ vars.ECS_TASK_DEFINITION }}
@@ -48,6 +47,7 @@ jobs:
 
       - name: Create release tag
         id: version
+        working-directory: blyss-app
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -94,8 +94,8 @@ jobs:
       - name: Build and push app image
         uses: docker/build-push-action@v6
         with:
-          context: .
-          file: docker/Dockerfile.prod
+          context: ./blyss-app
+          file: ./blyss-app/docker/Dockerfile.prod
           target: runtime
           push: true
           tags: |
