@@ -1,0 +1,15 @@
+name: blys-prod
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+      args:
+        APP_USER: blys
+        APP_UID: 1000
+        APP_GID: 1000
+    image: blys-app:prod
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
