@@ -5,8 +5,8 @@ module "ecr" {
 
   create             = true
   name               = each.value
-  image_immutability = "MUTABLE" # Setting value to "MUTABLE" allowS to override image.
-  force_delete       = false     # If true, will delete the repository even if it contains images.
+  image_immutability = "IMMUTABLE"
+  force_delete       = false # If true, will delete the repository even if it contains images.
 
   custom_tags = {
     Environment = var.environment
