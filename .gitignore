@@ -28,3 +28,6 @@ override.tf.json
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+
+# Docs generated/asset images
+docs/images/
