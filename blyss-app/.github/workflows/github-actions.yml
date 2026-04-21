@@ -1,22 +1,21 @@
-name: Deploy Backend
+name: Deploy Blyss
 
 on:
   push:
     branches:
       - main
-      - develop
     paths:
       - 'blyss-app/**'
       - 'blyss-app/.github/workflows/github-actions.yml'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-backend-${{ github.ref }}
+  group: deploy-app-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 env:
   ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
@@ -27,47 +26,45 @@ env:
   CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
 
 jobs:
-  build:
-    name: Build App Images (Develop)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_name == 'develop'
-    environment: dev
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build app image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile.prod
-          target: runtime
-          push: false
-          tags: local/blys-app:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-and-push:
-    name: Build and Push App Image (Prod)
+  prod-release:
+    name: Semantic Release (Prod)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref_name == 'main'
     environment: prod
     outputs:
-      image: ${{ steps.meta.outputs.image }}
+      version_tag: ${{ steps.version.outputs.version_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+
+      - name: Create release tag
+        id: version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx semantic-release@25.0.3
+          VERSION_TAG="$(git tag --points-at HEAD | head -n 1)"
+          if [ -z "$VERSION_TAG" ]; then
+            echo "No release tag created by semantic-release."
+            exit 1
+          fi
+          echo "version_tag=$VERSION_TAG" >> "$GITHUB_OUTPUT"
+
+  prod-build-push-deploy:
+    name: Build, Push, and Deploy App (Prod)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    environment: prod
+    needs: prod-release
 
     steps:
       - name: Checkout code
@@ -90,10 +87,9 @@ jobs:
         id: meta
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.prod-release.outputs.version_tag }}
         run: |
-          echo "SHORT_SHA=${IMAGE_TAG:0:7}" >> $GITHUB_ENV
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG:0:7}" >> $GITHUB_OUTPUT
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:${IMAGE_TAG}" >> $GITHUB_OUTPUT
 
       - name: Build and push app image
         uses: docker/build-push-action@v6
@@ -108,20 +104,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy ECS Service
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_name == 'main'
-    environment: prod
-    needs: build-and-push
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
       - name: Download task definition
         run: |
           aws ecs describe-task-definition \
@@ -134,7 +116,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ needs.build-and-push.outputs.image }}
+          image: ${{ steps.meta.outputs.image }}
 
       - name: Deploy service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
