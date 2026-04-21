@@ -24,3 +24,11 @@ repos:
     hooks:
     -   id: flake8
         args: ["--max-line-length=88"]
+
+  - repo: local
+    hooks:
+      - id: commit-message-convention
+        name: commit-message-convention
+        entry: blyss-app/scripts/check-commit-msg.sh
+        language: script
+        stages: [commit-msg]
