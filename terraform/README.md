@@ -11,3 +11,8 @@
    - `terraform init`
    - `terraform plan -out tfplan`
    - `terraform apply tfplan`
+
+## Notes
+
+- Remote state bucket/backends must exist and be accessible.
+- Secrets are bootstrapped with placeholder values; update in SSM/Secrets Manager after apply.
